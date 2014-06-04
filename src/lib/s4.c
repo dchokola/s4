@@ -69,6 +69,7 @@ static GHashTable *_read_string (s4_t *s4, FILE *file)
 
 		if (r != len) {
 			g_hash_table_destroy (ret);
+			free (str);
 			return NULL;
 		}
 
