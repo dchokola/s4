@@ -176,6 +176,19 @@ static entry_t *_entry_create (const char *key, const s4_val_t *val)
 	return entry;
 }
 
+/**
+ * Frees an entry created by _entry_create.
+ *
+ * @param entry The entry to be freed.
+ */
+static void _entry_free (entry_t *entry)
+{
+	if (entry->data)
+		_entry_free_data (entry->data);
+	if (entry)
+		free (entry);
+}
+
 static int _entry_lock_shared (entry_t *entry, s4_transaction_t *trans)
 {
 	return _lock_shared (entry->lock, trans);
@@ -216,7 +229,8 @@ int _s4_add (s4_transaction_t *trans, const char *key_a, const s4_val_t *val_a,
 
 	if (entries == NULL) {
 		entry = _entry_create (key_a, val_a);
-		if (!_index_lock_exclusive (index, trans)) goto deadlocked;
+		if (!_index_lock_exclusive (index, trans))
+			goto deadlocked_free_entry;
 		_index_insert (index, val_a, entry);
 	} else {
 		entry = entries->data;
@@ -237,6 +251,8 @@ int _s4_add (s4_transaction_t *trans, const char *key_a, const s4_val_t *val_a,
 
 	return ret;
 
+deadlocked_free_entry:
+	_entry_free (entry);
 deadlocked:
 	_transaction_set_deadlocked (trans);
 	return 0;
